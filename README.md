@@ -25,7 +25,7 @@ MDFW treats conversations as belonging to the people who have them.
 
 The AI is designed to avoid casually revealing another user's private discussions or personal disclosures to someone else, even if asked directly. Instead of acting as a conversation log, it maintains contextual boundaries while staying in character.
 
-Features
+## Features
 AI Personality System
 Personality profiles
 Mood system
@@ -41,7 +41,7 @@ Running joke system
 Style management
 Goal management
 
-Discord Framework
+## Discord Framework
 Prefix commands
 Slash commands
 Event system
@@ -50,7 +50,7 @@ Cooldown manager
 Permission manager
 Owner commands
 
-Built-in Commands
+## Built-in Commands
 AI Chat
 Anime
 Image generation
@@ -64,7 +64,7 @@ Games
 Quotes
 And more...
 
-Philosophy
+## Philosophy
 
 Most Discord bots execute commands.
 
@@ -72,13 +72,13 @@ MDFW tries to build conversations.
 
 The AI keeps track of previous interactions, adapts its tone, develops running jokes, and maintains a consistent personality instead of responding like a blank chatbot every time.
 
-Current Status
+## Current Status
 
 This project is actively under development.
 
 New systems and managers are continuously being added to improve memory, personality, reasoning, and conversation quality.
 
-Tech Stack
+## Tech Stack
 Node.js
 Discord.js
 Groq API
