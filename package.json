@@ -1,0 +1,29 @@
+{
+  "name": "mrdevbot-framework-2.0",
+  "version": "1.0.0",
+  "description": "Mr Dev Bot Framework",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon --config nodemon.json index.js"
+  },
+  "keywords": [],
+  "author": "Mr Developer",
+  "license": "ISC",
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.2",
+    "axios": "^1.18.1",
+    "discord.js": "^14.22.1",
+    "dotenv": "^17.2.2",
+    "fs": "^0.0.1-security",
+    "fs-extra": "^11.4.0",
+    "groq-sdk": "^1.4.0",
+    "moment-timezone": "^0.6.3",
+    "path": "^0.12.7",
+    "youtube-search-api": "^2.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

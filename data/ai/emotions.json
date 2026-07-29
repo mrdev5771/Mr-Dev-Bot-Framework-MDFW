@@ -1,0 +1,28 @@
+{
+  "1248628085004435567": {
+    "current": "happy",
+    "mood": "happy",
+    "lastReason": "User expressed positivity",
+    "updated": 1764110000,
+    "relationship": "acquaintance",
+    "updatedAt": "2026-07-29T16:01:12.367Z",
+    "intensity": 10,
+    "trust": 24
+  },
+  "1522305268082413832": {
+    "mood": "happy",
+    "intensity": 10,
+    "trust": 64,
+    "relationship": "friend",
+    "lastReason": "User expressed positivity",
+    "updatedAt": "2026-07-29T15:52:03.950Z"
+  },
+  "1463754416728441004": {
+    "mood": "neutral",
+    "intensity": 0,
+    "trust": 50,
+    "relationship": "friend",
+    "lastReason": null,
+    "updatedAt": "2026-07-27T22:19:22.545Z"
+  }
+}

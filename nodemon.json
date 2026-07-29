@@ -1,0 +1,15 @@
+{
+  "watch": [
+    "commands",
+    "core",
+    "events",
+    "src",
+    "index.js"
+  ],
+  "ignore": [
+    "data/**",
+    "logs/**",
+    "*.json"
+  ],
+  "ext": "js mjs cjs"
+}

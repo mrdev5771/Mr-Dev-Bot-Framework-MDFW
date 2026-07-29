@@ -1,0 +1,38 @@
+{
+  "1248628085004435567": {
+    "facts": [
+      {
+        "text": "User loves the fact you remain loyal good but giving her advice really bro ?",
+        "importance": 8
+      }
+    ],
+    "preferences": [],
+    "events": [],
+    "history": []
+  },
+  "1522305268082413832": {
+    "facts": [
+      {
+        "text": "User name is fareeha awan",
+        "importance": 10
+      },
+      {
+        "text": "User loves fahad",
+        "importance": 8
+      },
+      {
+        "text": "User loves fahad but he don't love me back it's break my heart you are his creation his partner his companion can you keep a good word for me to him or guide me how to make him mine and i'll always help you in roasting fahad i'll always take your side",
+        "importance": 8
+      }
+    ],
+    "preferences": [],
+    "events": [
+      {
+        "text": "i am sad today",
+        "importance": 6,
+        "date": "2026-07-29T15:45:42.549Z"
+      }
+    ],
+    "history": []
+  }
+}
