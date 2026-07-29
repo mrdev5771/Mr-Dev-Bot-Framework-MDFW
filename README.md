@@ -3,7 +3,7 @@
 Mr Dev Bot Framework (MDFW) is an experimental AI conversation framework. The architecture and AI systems are continuously evolving, and some features may change as development progresses.
 
 
-An AI conversation framework for Discord.
+## An AI conversation framework for Discord.
 
 The framework focuses on long-term conversational consistency through modular systems for memory, personality, context, relationships, and behavioral decision-making.
 
