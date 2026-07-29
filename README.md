@@ -83,3 +83,13 @@ Node.js
 Discord.js
 Groq API
 Modular architecture
+
+## Why I Built This
+
+MDFW started as a personal project.
+
+I wanted an AI companion that behaved the way I imagined—not just another chatbot that answered questions.
+
+Every system in this framework exists because I wanted the AI to feel more consistent, remember previous conversations, develop its own personality, and interact naturally over time.
+
+Although the framework is public, it continues to evolve based on my own ideas and experiments.
