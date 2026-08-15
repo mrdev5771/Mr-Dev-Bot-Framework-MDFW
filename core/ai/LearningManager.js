@@ -1,84 +1,58 @@
 const ProfileExtractor = require("./ProfileExtractor");
-const MemoryManager = require("./MemoryManager");
 const ConversationManager = require("./ConversationManager");
-const EmotionManager = require("./EmotionManager");
-const RelationshipManager = require("./RelationshipManager");
+const KnowledgeLogger = require("./brain/KnowledgeLogger");
+const KnowledgeExtractor = require("./brain/KnowledgeExtractor");
+const KnowledgeValidator = require("./brain/KnowledgeValidator");
+const KnowledgeRouter = require("./brain/KnowledgeRouter");
 
 class LearningManager {
   static learn(userID, message, reply) {
     setImmediate(async () => {
-      await Promise.allSettled([
-        this.learnProfile(userID, message),
+      // ==========================
+      // Save conversation immediately
+      // ==========================
 
-        this.learnMemory(userID, message),
+      try {
+        await ConversationManager.add(userID, message, reply);
+      } catch (err) {
+        console.log("[Conversation Save Error]", err.message);
+      }
 
-        this.learnConversation(userID, message, reply),
+      // ==========================
+      // Legacy profile extractor
+      // (temporary)
+      // ==========================
 
-        this.learnEmotion(userID, message),
+      try {
+        await ProfileExtractor.extract(userID, message);
+      } catch (err) {
+        console.log("[Profile Extract Error]", err.message);
+      }
 
-        this.learnRelationship(userID),
-      ]);
+      // ==========================
+      // Brain
+      // ==========================
+
+      try {
+        const rawKnowledge = await KnowledgeExtractor.extract(message);
+
+        const knowledge = KnowledgeValidator.validate(rawKnowledge);
+
+        await KnowledgeLogger.log(userID, message, knowledge);
+
+        await KnowledgeRouter.route(userID, knowledge);
+
+        // Debug
+        console.log("\n========== KNOWLEDGE ==========");
+        console.dir(knowledge, {
+          depth: null,
+          colors: true,
+        });
+        console.log("===============================\n");
+      } catch (err) {
+        console.log("[Knowledge Brain Error]", err.message);
+      }
     });
-  }
-
-  // =========================
-  // PROFILE
-  // =========================
-
-  static async learnProfile(userID, message) {
-    try {
-      await ProfileExtractor.extract(userID, message);
-    } catch (err) {
-      console.log("[Profile Extract Error]", err.message);
-    }
-  }
-
-  // =========================
-  // MEMORY
-  // =========================
-
-  static async learnMemory(userID, message) {
-    try {
-      await MemoryManager.remember(userID, message);
-    } catch (err) {
-      console.log("[Memory Save Error]", err.message);
-    }
-  }
-
-  // =========================
-  // CONVERSATION
-  // =========================
-
-  static async learnConversation(userID, message, reply) {
-    try {
-      await ConversationManager.add(userID, message, reply);
-    } catch (err) {
-      console.log("[Conversation Save Error]", err.message);
-    }
-  }
-
-  // =========================
-  // EMOTION
-  // =========================
-
-  static async learnEmotion(userID, message) {
-    try {
-      await EmotionManager.update(userID, message);
-    } catch (err) {
-      console.log("[Emotion Update Error]", err.message);
-    }
-  }
-
-  // =========================
-  // RELATIONSHIP
-  // =========================
-
-  static async learnRelationship(userID) {
-    try {
-      await RelationshipManager.update(userID);
-    } catch (err) {
-      console.log("[Relationship Error]", err.message);
-    }
   }
 }
 

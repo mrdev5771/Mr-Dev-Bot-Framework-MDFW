@@ -5,9 +5,21 @@
     "messages": 250
   },
   "1522305268082413832": {
+    "level": 3,
+    "title": "Acquaintance",
+    "messages": 50,
+    "trust": 50
+  },
+  "1463754416728441004": {
     "level": 1,
     "title": "Stranger",
-    "messages": 22,
-    "trust": 22
+    "messages": 2,
+    "trust": 2
+  },
+  "1521909070632714312": {
+    "level": 1,
+    "title": "Stranger",
+    "messages": 0,
+    "trust": 0
   }
 }

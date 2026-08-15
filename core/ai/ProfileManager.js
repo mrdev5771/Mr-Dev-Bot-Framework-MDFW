@@ -1,57 +1,164 @@
-const fs = require("fs-extra");
-const path = require("path");
-
-const FILE = path.join(process.cwd(), "data/ai/profiles.json");
+const ProfileStore = require("../../database/stores/ProfileStore");
 
 class ProfileManager {
-  static async load() {
-    await fs.ensureFile(FILE);
-
-    let data = await fs.readJson(FILE, {});
-
-    return data;
-  }
-
-  static async save(data) {
-    await fs.writeJson(FILE, data, {
-      spaces: 2,
-    });
-  }
+  // ============================================================
+  // GET PROFILE
+  // ============================================================
 
   static async getProfile(userID) {
-    const data = await this.load();
+    const profile = await ProfileStore.get(userID);
 
-    return data[userID] || {};
+    if (!profile) {
+      return {};
+    }
+
+    return {
+      facts:
+        profile.facts instanceof Map
+          ? Object.fromEntries(profile.facts)
+          : profile.facts || {},
+
+      interests: profile.interests || [],
+
+      likes: profile.likes || [],
+
+      dislikes: profile.dislikes || [],
+    };
   }
+
+  // ============================================================
+  // UPDATE SINGLE VALUE
+  // ============================================================
 
   static async update(userID, key, value) {
-    const data = await this.load();
+    const profile = await ProfileStore.get(userID);
 
-    if (!data[userID]) {
-      data[userID] = {};
+    if (key === "facts") {
+      for (const [factKey, factValue] of Object.entries(value || {})) {
+        profile.facts.set(
+          factKey,
+          typeof factValue === "string" ? factValue : JSON.stringify(factValue),
+        );
+      }
+    } else if (key === "interests") {
+      profile.interests = Array.isArray(value) ? value : [value];
+    } else if (key === "likes") {
+      profile.likes = Array.isArray(value) ? value : [value];
+    } else if (key === "dislikes") {
+      profile.dislikes = Array.isArray(value) ? value : [value];
+    } else {
+      profile.facts.set(
+        key,
+        typeof value === "string" ? value : JSON.stringify(value),
+      );
     }
 
-    data[userID][key] = value;
+    await ProfileStore.save(profile);
 
-    await this.save(data);
+    return profile;
   }
 
+  // ============================================================
+  // MERGE PROFILE
+  // ============================================================
+
+  static async merge(userID, data = {}) {
+    const profile = await ProfileStore.get(userID);
+
+    // ----------------------------------------------------------
+    // FACTS
+    // ----------------------------------------------------------
+
+    if (data.facts && typeof data.facts === "object") {
+      for (const [key, value] of Object.entries(data.facts)) {
+        if (value === undefined || value === null) continue;
+
+        profile.facts.set(
+          key,
+          typeof value === "string" ? value : JSON.stringify(value),
+        );
+      }
+    }
+
+    // ----------------------------------------------------------
+    // INTERESTS
+    // ----------------------------------------------------------
+
+    if (Array.isArray(data.interests)) {
+      profile.interests = [
+        ...new Set([...(profile.interests || []), ...data.interests]),
+      ];
+    }
+
+    // ----------------------------------------------------------
+    // LIKES
+    // ----------------------------------------------------------
+
+    if (Array.isArray(data.likes)) {
+      profile.likes = [...new Set([...(profile.likes || []), ...data.likes])];
+    }
+
+    // ----------------------------------------------------------
+    // DISLIKES
+    // ----------------------------------------------------------
+
+    if (Array.isArray(data.dislikes)) {
+      profile.dislikes = [
+        ...new Set([...(profile.dislikes || []), ...data.dislikes]),
+      ];
+    }
+
+    await ProfileStore.save(profile);
+
+    return profile;
+  }
+
+  // ============================================================
+  // ADD LIKE
+  // ============================================================
+
   static async addLike(userID, value) {
-    const data = await this.load();
+    const profile = await ProfileStore.get(userID);
 
-    if (!data[userID]) {
-      data[userID] = {};
+    if (!profile.likes.includes(value)) {
+      profile.likes.push(value);
     }
 
-    if (!data[userID].likes) {
-      data[userID].likes = [];
+    await ProfileStore.save(profile);
+
+    return profile;
+  }
+
+  // ============================================================
+  // ADD INTEREST
+  // ============================================================
+
+  static async addInterest(userID, value) {
+    const profile = await ProfileStore.get(userID);
+
+    if (!profile.interests.includes(value)) {
+      profile.interests.push(value);
     }
 
-    if (!data[userID].likes.includes(value)) {
-      data[userID].likes.push(value);
+    await ProfileStore.save(profile);
+
+    return profile;
+  }
+
+  // ============================================================
+  // ADD DISLIKE
+  // ============================================================
+
+  static async addDislike(userID, value) {
+    const profile = await ProfileStore.get(userID);
+
+    if (!profile.dislikes.includes(value)) {
+      profile.dislikes.push(value);
     }
 
-    await this.save(data);
+    await ProfileStore.save(profile);
+
+    return profile;
   }
 }
 

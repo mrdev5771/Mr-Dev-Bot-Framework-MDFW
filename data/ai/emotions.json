@@ -4,18 +4,18 @@
     "mood": "happy",
     "lastReason": "User expressed positivity",
     "updated": 1764110000,
-    "relationship": "acquaintance",
-    "updatedAt": "2026-07-29T16:01:12.367Z",
+    "relationship": "friend",
+    "updatedAt": "2026-07-31T07:29:32.669Z",
     "intensity": 10,
-    "trust": 24
+    "trust": 50
   },
   "1522305268082413832": {
     "mood": "happy",
     "intensity": 10,
-    "trust": 64,
+    "trust": 68,
     "relationship": "friend",
     "lastReason": "User expressed positivity",
-    "updatedAt": "2026-07-29T15:52:03.950Z"
+    "updatedAt": "2026-07-30T18:13:40.197Z"
   },
   "1463754416728441004": {
     "mood": "neutral",
@@ -23,6 +23,6 @@
     "trust": 50,
     "relationship": "friend",
     "lastReason": null,
-    "updatedAt": "2026-07-27T22:19:22.545Z"
+    "updatedAt": "2026-07-30T19:18:25.186Z"
   }
 }

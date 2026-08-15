@@ -1,53 +1,54 @@
-const fs = require("fs-extra");
-const path = require("path");
-
-const FILE = path.join(process.cwd(), "data/ai/conversations.json");
+const ConversationStore = require("../../database/stores/ConversationStore");
 
 class ConversationManager {
-  static async load() {
-    await fs.ensureFile(FILE);
+  // ============================================================
+  // SAVE CONVERSATION
+  // ============================================================
 
-    return await fs.readJson(FILE, {});
-  }
-
-  static async save(data) {
-    await fs.writeJson(FILE, data, {
-      spaces: 2,
-    });
-  }
-
-  static async add(userID, user, ai) {
-    const data = await this.load();
-
-    if (!data[userID]) {
-      data[userID] = [];
+  static async add(userID, userMessage, botReply) {
+    if (!userID) {
+      throw new Error("ConversationManager.add(): userID is required");
     }
 
-    data[userID].push({
-      user,
-
-      ai,
-
-      time: Date.now(),
-    });
-
-    // keep only last 50 chats
-
-    if (data[userID].length > 50) {
-      data[userID] = data[userID].slice(-50);
+    if (!userMessage || !botReply) {
+      throw new Error(
+        "ConversationManager.add(): userMessage and botReply are required",
+      );
     }
 
-    await this.save(data);
+    return ConversationStore.create(userID, userMessage, botReply);
   }
+
+  // ============================================================
+  // RECENT CONVERSATION
+  // ============================================================
+
+  static async get(userID, limit = 10) {
+    return ConversationStore.getRecent(userID, limit);
+  }
+
+  // ============================================================
+  // COMPATIBILITY API
+  // ============================================================
 
   static async getRecent(userID, limit = 10) {
-    const data = await this.load();
+    return this.get(userID, limit);
+  }
 
-    if (!data[userID]) {
-      return [];
-    }
+  // ============================================================
+  // CLEAR
+  // ============================================================
 
-    return data[userID].slice(-limit);
+  static async clear(userID) {
+    return ConversationStore.clear(userID);
+  }
+
+  // ============================================================
+  // COUNT
+  // ============================================================
+
+  static async count(userID) {
+    return ConversationStore.count(userID);
   }
 }
 

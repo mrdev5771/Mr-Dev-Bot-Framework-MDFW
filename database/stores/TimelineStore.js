@@ -1,28 +1,12 @@
-const TimelineStore = require("../../database/stores/TimelineStore");
+const TimelineEvent = require("../models/TimelineEvent");
 
-class TimelineManager {
+class TimelineStore {
   // ============================================================
   // CREATE
   // ============================================================
 
-  static async create(userID, event, options = {}) {
-    if (!userID) {
-      throw new Error("TimelineManager.create(): userID is required");
-    }
-
-    if (!event || !String(event).trim()) {
-      return null;
-    }
-
-    return TimelineStore.create({
-      userID,
-
-      event: String(event).trim(),
-
-      category: options.category || "conversation",
-
-      importance: options.importance ?? 5,
-    });
+  static async create(data) {
+    return TimelineEvent.create(data);
   }
 
   // ============================================================
@@ -32,7 +16,13 @@ class TimelineManager {
   static async get(userID, limit = 20) {
     if (!userID) return [];
 
-    return TimelineStore.get(userID, limit);
+    return TimelineEvent.find({ userID })
+      .sort({
+        importance: -1,
+        createdAt: -1,
+      })
+      .limit(limit)
+      .lean();
   }
 
   // ============================================================
@@ -42,7 +32,12 @@ class TimelineManager {
   static async recent(userID, limit = 50) {
     if (!userID) return [];
 
-    return TimelineStore.recent(userID, limit);
+    return TimelineEvent.find({ userID })
+      .sort({
+        createdAt: -1,
+      })
+      .limit(limit)
+      .lean();
   }
 
   // ============================================================
@@ -52,7 +47,12 @@ class TimelineManager {
   static async getChronological(userID, limit = 20) {
     if (!userID) return [];
 
-    return TimelineStore.getChronological(userID, limit);
+    return TimelineEvent.find({ userID })
+      .sort({
+        createdAt: 1,
+      })
+      .limit(limit)
+      .lean();
   }
 
   // ============================================================
@@ -62,7 +62,18 @@ class TimelineManager {
   static async search(userID, keyword) {
     if (!userID || !keyword) return [];
 
-    return TimelineStore.search(userID, keyword);
+    return TimelineEvent.find({
+      userID,
+      event: {
+        $regex: keyword,
+        $options: "i",
+      },
+    })
+      .sort({
+        importance: -1,
+        createdAt: -1,
+      })
+      .lean();
   }
 
   // ============================================================
@@ -72,7 +83,16 @@ class TimelineManager {
   static async update(timelineID, data = {}) {
     if (!timelineID) return null;
 
-    return TimelineStore.update(timelineID, data);
+    return TimelineEvent.findByIdAndUpdate(
+      timelineID,
+      {
+        $set: data,
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).lean();
   }
 
   // ============================================================
@@ -82,8 +102,8 @@ class TimelineManager {
   static async delete(timelineID) {
     if (!timelineID) return null;
 
-    return TimelineStore.delete(timelineID);
+    return TimelineEvent.findByIdAndDelete(timelineID);
   }
 }
 
-module.exports = TimelineManager;
+module.exports = TimelineStore;

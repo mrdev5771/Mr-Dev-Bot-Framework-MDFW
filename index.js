@@ -4,44 +4,32 @@ const fs = require("fs");
 const path = require("path");
 
 const {
-    Client,
-    Collection,
-    GatewayIntentBits,
-    Partials
+  Client,
+  Collection,
+  GatewayIntentBits,
+  Partials,
 } = require("discord.js");
 
 const config = require("./config");
+const MongoManager = require("./database/MongoManager");
 
 const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.MessageContent,
+  ],
 
-    intents: [
-
-        GatewayIntentBits.Guilds,
-
-        GatewayIntentBits.GuildMessages,
-
-        GatewayIntentBits.GuildMembers,
-
-        GatewayIntentBits.MessageContent
-
-    ],
-
-    partials: [
-
-        Partials.Channel,
-
-        Partials.Message
-
-    ]
-
+  partials: [Partials.Channel, Partials.Message],
 });
 
 client.config = config;
 
 client.commands = new Collection();
 client.aliases = new Collection();
-
 client.cooldowns = new Collection();
+
 client.services = {};
 
 client.services.users = require("./core/services/Users");
@@ -53,23 +41,29 @@ client.root = __dirname;
 global.client = client;
 
 global.data = {
-    threadData: new Map(),
-    userData: new Map(),
+  threadData: new Map(),
+  userData: new Map(),
 
-    allThreadID: [],
-    allUserID: [],
+  allThreadID: [],
+  allUserID: [],
 
-    threadBanned: new Map(),
-    userBanned: new Map(),
+  threadBanned: new Map(),
+  userBanned: new Map(),
 
-    commandBanned: new Map(),
+  commandBanned: new Map(),
 
-    botID: null
+  botID: null,
 };
 
-// Loaders
+// ========================
+// START BOT
+// ========================
 
-require("./core/loaders/commands")(client);
-require("./core/loaders/events")(client);
+(async () => {
+  await MongoManager.connect();
 
-client.login(process.env.TOKEN);
+  require("./core/loaders/commands")(client);
+  require("./core/loaders/events")(client);
+
+  await client.login(process.env.TOKEN);
+})();

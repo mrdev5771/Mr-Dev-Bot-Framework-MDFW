@@ -1,321 +1,74 @@
-const fs = require("fs-extra");
-const path = require("path");
-
-const FILE = path.join(__dirname, "../../data/ai/memories.json");
+const MemoryStore = require("../../database/stores/MemoryStore");
 
 class MemoryManager {
-  static async load() {
-    await fs.ensureFile(FILE);
+  // ============================================================
+  // SAVE MEMORY
+  // ============================================================
 
-    try {
-      return await fs.readJson(FILE);
-    } catch (err) {
-      return {};
-    }
-  }
-
-  static async save(data) {
-    await fs.writeJson(
-      FILE,
-
-      data,
-
-      {
-        spaces: 2,
-      },
-    );
-  }
-
-  static async getUser(userID) {
-    const data = await this.load();
-
-    if (!data[userID]) {
-      data[userID] = {
-        facts: [],
-
-        preferences: [],
-
-        events: [],
-
-        history: [],
-      };
+  static async remember(userID, memory, options = {}) {
+    if (!userID) {
+      throw new Error("MemoryManager.remember(): userID is required");
     }
 
-    // =========================
-    // AUTO MEMORY REPAIR SYSTEM
-    // =========================
-
-    if (!Array.isArray(data[userID].facts)) {
-      data[userID].facts = [];
+    if (!memory || typeof memory !== "string" || !memory.trim()) {
+      return null;
     }
 
-    if (!Array.isArray(data[userID].preferences)) {
-      data[userID].preferences = [];
-    }
+    return MemoryStore.create({
+      userID,
 
-    if (!Array.isArray(data[userID].events)) {
-      data[userID].events = [];
-    }
+      memory: memory.trim(),
 
-    if (!Array.isArray(data[userID].history)) {
-      data[userID].history = [];
-    }
+      importance: Number(options.importance ?? 1),
 
-    // =========================
-    // OLD MEMORY MIGRATION
-    // =========================
+      tags: Array.isArray(options.tags) ? options.tags : [],
 
-    data[userID].facts = data[userID].facts.map((item) => {
-      if (typeof item === "string") {
-        return {
-          text: item,
-
-          importance: 5,
-        };
-      }
-
-      return item;
+      source: options.source || "conversation",
     });
-
-    await this.save(data);
-
-    return data[userID];
   }
 
-  static async getMemory(userID) {
-    const user = await this.getUser(userID);
+  // ============================================================
+  // GET MEMORY TEXT
+  // ============================================================
 
-    let memory = "";
+  static async get(userID, limit = 20) {
+    const memories = await MemoryStore.get(userID, limit);
 
-    // =========================
-    // FACTS
-    // =========================
-
-    if (user.facts.length) {
-      memory += "Important facts about user:\n";
-
-      user.facts
-
-        .filter((x) => x && x.text)
-
-        .sort((a, b) => (b.importance || 0) - (a.importance || 0))
-
-        .slice(0, 10)
-
-        .forEach((item) => {
-          memory += `- ${item.text}\n`;
-        });
-    }
-
-    // =========================
-    // PREFERENCES
-    // =========================
-
-    if (user.preferences.length) {
-      memory += "\nUser preferences:\n";
-
-      user.preferences.forEach((item) => {
-        memory += `- ${item}\n`;
-      });
-    }
-
-    // =========================
-    // EVENTS
-    // =========================
-
-    if (user.events.length) {
-      memory += "\nImportant events:\n";
-
-      user.events
-
-        .slice(-5)
-
-        .forEach((item) => {
-          if (item.text) {
-            memory += `- ${item.text}\n`;
-          }
-        });
-    }
-
-    if (!memory.trim()) {
-      memory = "No important memories available.";
-    }
-
-    return memory;
+    return memories.map((memory) => memory.memory);
   }
 
-  static async addMemory(userID, type, text, importance = 5) {
-    const data = await this.load();
+  // ============================================================
+  // GET FULL MEMORY DOCUMENTS
+  // ============================================================
 
-    if (!data[userID]) {
-      data[userID] = {
-        facts: [],
-
-        preferences: [],
-
-        events: [],
-
-        history: [],
-      };
-    }
-
-    if (type === "fact") {
-      const exists = data[userID].facts.some(
-        (x) => x.text.toLowerCase() === text.toLowerCase(),
-      );
-
-      if (!exists) {
-        data[userID].facts.push({
-          text,
-
-          importance,
-        });
-      }
-    }
-
-    if (type === "preference") {
-      if (!data[userID].preferences.includes(text)) {
-        data[userID].preferences.push(text);
-      }
-    }
-
-    if (type === "event") {
-      data[userID].events.push({
-        text,
-
-        importance,
-
-        date: new Date().toISOString(),
-      });
-    }
-
-    await this.save(data);
+  static async getDetailed(userID, limit = 20) {
+    return MemoryStore.get(userID, limit);
   }
 
-  static async addHistory(userID, text) {
-    const user = await this.getUser(userID);
+  // ============================================================
+  // OLD API COMPATIBILITY
+  // ============================================================
 
-    user.history.push(text);
+  static async getMemory(userID, limit = 20) {
+    const memories = await this.get(userID, limit);
 
-    if (user.history.length > 30) {
-      user.history = user.history.slice(-30);
+    if (!memories.length) {
+      return "No memory available.";
     }
 
-    const data = await this.load();
-
-    data[userID] = user;
-
-    await this.save(data);
+    return memories.join("\n");
   }
 
-  static async remember(userID, message) {
-    const lower = message.toLowerCase();
+  // ============================================================
+  // SEARCH
+  // ============================================================
 
-    // NAME
-
-    if (lower.includes("my name is")) {
-      let name = message
-
-        .replace(/.*my name is/i, "")
-
-        .trim();
-
-      await this.addMemory(
-        userID,
-
-        "fact",
-
-        `User name is ${name}`,
-
-        10,
-      );
-
-      return true;
+  static async search(userID, keyword) {
+    if (!userID || !keyword) {
+      return [];
     }
 
-    // LIKE
-
-    if (lower.includes("i like")) {
-      let thing = message
-
-        .replace(/.*i like/i, "")
-
-        .trim();
-
-      await this.addMemory(
-        userID,
-
-        "fact",
-
-        `User likes ${thing}`,
-
-        8,
-      );
-
-      return true;
-    }
-
-    // LOVE
-
-    if (lower.includes("i love")) {
-      let thing = message
-
-        .replace(/.*i love/i, "")
-
-        .trim();
-
-      await this.addMemory(
-        userID,
-
-        "fact",
-
-        `User loves ${thing}`,
-
-        8,
-      );
-
-      return true;
-    }
-
-    // FAVORITE
-
-    if (lower.includes("my favourite") || lower.includes("my favorite")) {
-      await this.addMemory(
-        userID,
-
-        "preference",
-
-        message,
-
-        7,
-      );
-
-      return true;
-    }
-
-    // BAD EVENTS
-
-    if (
-      lower.includes("today") &&
-      (lower.includes("bad") ||
-        lower.includes("sad") ||
-        lower.includes("problem") ||
-        lower.includes("issue"))
-    ) {
-      await this.addMemory(
-        userID,
-
-        "event",
-
-        message,
-
-        6,
-      );
-
-      return true;
-    }
-
-    return false;
+    return MemoryStore.search(userID, keyword);
   }
 }
 

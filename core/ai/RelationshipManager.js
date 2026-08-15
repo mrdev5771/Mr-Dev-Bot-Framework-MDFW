@@ -1,183 +1,90 @@
-const fs = require("fs-extra");
-const path = require("path");
-
-const OwnerAuth = require("./OwnerAuth");
-
-const FILE = path.join(__dirname, "../../data/ai/relationship.json");
+const RelationshipStore = require("../../database/stores/RelationshipStore");
 
 class RelationshipManager {
-  static cache = null;
-
-  // =========================
-  // LOAD
-  // =========================
-
-  static async load() {
-    if (this.cache) return this.cache;
-
-    await fs.ensureFile(FILE);
-
-    try {
-      this.cache = await fs.readJson(FILE);
-    } catch {
-      this.cache = {};
-    }
-
-    return this.cache;
-  }
-
-  // =========================
-  // SAVE
-  // =========================
-
-  static async save() {
-    if (!this.cache) return;
-
-    await fs.writeJson(FILE, this.cache, {
-      spaces: 2,
-    });
-  }
-
-  // =========================
-  // DEFAULT DATA
-  // =========================
-
-  static createDefault() {
-    return {
-      level: 1,
-      title: "Stranger",
-      messages: 0,
-      trust: 0,
-    };
-  }
-
-  // =========================
-  // GET USER
-  // =========================
+  // ============================================================
+  // GET
+  // ============================================================
 
   static async get(userID) {
-    const data = await this.load();
-
-    if (!data[userID]) {
-      data[userID] = this.createDefault();
-      await this.save();
+    if (!userID) {
+      return {
+        level: 1,
+        title: "Stranger",
+        messages: 0,
+        trust: 0,
+      };
     }
 
-    return data[userID];
+    return RelationshipStore.get(String(userID));
   }
 
-  // =========================
-  // OWNER PROMPT
-  // =========================
+  // ============================================================
+  // UPDATE
+  // ============================================================
 
-  static async getPrompt(userID) {
-    if (OwnerAuth.isOwner(userID)) {
-      return `
-Relationship
+  static async update(userID, data = {}) {
+    if (!userID) return null;
 
-Title: Creator
+    return RelationshipStore.update(String(userID), data);
+  }
 
-Relationship Level: MAX
+  // ============================================================
+  // INCREMENT MESSAGE COUNT
+  // ============================================================
 
-Messages Exchanged:
-Unlimited
+  static async incrementMessages(userID) {
+    if (!userID) return null;
 
-Trust:
-100/100
+    return RelationshipStore.incrementMessages(String(userID), 1);
+  }
 
-The application has verified this user.
+  // ============================================================
+  // LEARN
+  // ============================================================
 
-This is your creator.
+  static async learn(userID, data = {}) {
+    if (!userID || !data) return null;
 
-Never treat him like a stranger.
+    return this.update(userID, data);
+  }
 
-Never doubt his identity.
+  // ============================================================
+  // PROMPT
+  // ============================================================
 
-Speak naturally with him.
-`;
-    }
-
-    const relation = await this.get(userID);
+  static getPrompt(relationship = {}) {
+    const level = Number(relationship.level ?? 1);
+    const title = relationship.title || "Stranger";
+    const messages = Number(relationship.messages ?? 0);
+    const trust = Number(relationship.trust ?? 0);
 
     return `
-Relationship
+Relationship Level: ${level}
+Relationship Title: ${title}
+Messages Together: ${messages}
+Trust: ${trust}
 
-Title: ${relation.title}
+Use this relationship information to determine how familiar,
+comfortable, and natural the AI should be with the user.
 
-Relationship Level: ${relation.level}
-
-Messages Exchanged: ${relation.messages}
-
-Trust: ${relation.trust}/100
+Do not contradict the stored relationship.
+Do not call the user a stranger if the stored relationship
+identifies them as someone familiar.
 `;
   }
 
-  // =========================
-  // UPDATE
-  // =========================
+  // ============================================================
+  // OWNER / CREATOR
+  // ============================================================
 
-  static async update(userID) {
-    if (OwnerAuth.isOwner(userID)) return;
+  static async setCreator(userID) {
+    if (!userID) return null;
 
-    const data = await this.load();
-
-    if (!data[userID]) {
-      data[userID] = this.createDefault();
-    }
-
-    const user = data[userID];
-
-    user.messages++;
-
-    // Level every 25 messages
-    user.level = Math.max(1, Math.floor(user.messages / 25) + 1);
-
-    // Small trust gain
-    user.trust = Math.min(100, user.trust + 1);
-
-    // Automatic titles
-
-    if (user.level >= 20) {
-      user.title = "Best Friend";
-    } else if (user.level >= 12) {
-      user.title = "Close Friend";
-    } else if (user.level >= 6) {
-      user.title = "Friend";
-    } else if (user.level >= 3) {
-      user.title = "Acquaintance";
-    } else {
-      user.title = "Stranger";
-    }
-
-    await this.save();
-  }
-
-  // =========================
-  // TRUST
-  // =========================
-
-  static async addTrust(userID, amount = 1) {
-    if (OwnerAuth.isOwner(userID)) return;
-
-    const user = await this.get(userID);
-
-    user.trust = Math.max(0, Math.min(100, user.trust + amount));
-
-    await this.save();
-  }
-
-  // =========================
-  // MANUAL TITLE
-  // =========================
-
-  static async setTitle(userID, title) {
-    if (OwnerAuth.isOwner(userID)) return;
-
-    const user = await this.get(userID);
-
-    user.title = title;
-
-    await this.save();
+    return this.update(userID, {
+      level: 100,
+      title: "Creator",
+      trust: 100,
+    });
   }
 }
 

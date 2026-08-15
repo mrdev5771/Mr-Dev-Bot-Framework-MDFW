@@ -1,643 +1,236 @@
-const fs = require("fs");
-const path = require("path");
-
-
-const file =
-path.join(
-    __dirname,
-    "../../data/ai/emotions.json"
-);
-
-
-
-
-// ==========================
-// LOAD DATA
-// ==========================
-
-function load(){
-
-    try{
-
-
-        if(!fs.existsSync(file)){
-
-
-            fs.writeFileSync(
-                file,
-                "{}"
-            );
-
-
-        }
-
-
-
-        return JSON.parse(
-
-            fs.readFileSync(
-                file,
-                "utf8"
-            )
-
-        );
-
-
-
-    }
-    catch(err){
-
-
-        console.log(
-            "[Emotion Load Error]",
-            err.message
-        );
-
-
-        return {};
-
-
-    }
-
-}
-
-
-
-
-
-// ==========================
-// SAVE DATA
-// ==========================
-
-function save(data){
-
-
-    try{
-
-
-        fs.writeFileSync(
-
-            file,
-
-            JSON.stringify(
-                data,
-                null,
-                2
-            )
-
-        );
-
-
-    }
-    catch(err){
-
-
-        console.log(
-            "[Emotion Save Error]",
-            err.message
-        );
-
-
-    }
-
-
-}
-
-
-
-
-
-
+const EmotionStore = require("../../database/stores/EmotionStore");
 
 class EmotionManager {
+  // ============================================================
+  // GET USER EMOTION
+  // ============================================================
 
+  static async get(userID) {
+    if (!userID) {
+      return {
+        mood: "Neutral",
+        happiness: 50,
+        anger: 0,
+        sadness: 0,
+        excitement: 0,
+        affection: 0,
+        lastReason: "",
+      };
+    }
 
+    const emotion = await EmotionStore.get(userID);
 
+    return {
+      mood: emotion.mood || "Neutral",
 
+      happiness: Number(emotion.happiness ?? 50),
 
-// ==========================
-// GET USER EMOTION
-// ==========================
+      anger: Number(emotion.anger ?? 0),
 
-static async get(userID){
+      sadness: Number(emotion.sadness ?? 0),
 
+      excitement: Number(emotion.excitement ?? 0),
 
-    const emotions =
-    load();
+      affection: Number(emotion.affection ?? 0),
 
+      lastReason: emotion.lastReason || "",
 
+      updatedAt: emotion.updatedAt,
+    };
+  }
 
-    return (
+  // ============================================================
+  // PROMPT FOR AI
+  // ============================================================
 
-        emotions[userID]
+  static async getPrompt(userID) {
+    const emotion = await this.get(userID);
 
-        ||
-
-        {
-
-            mood:"neutral",
-
-            intensity:0,
-
-            trust:50,
-
-            relationship:"new",
-
-            lastReason:null
-
-        }
-
-    );
-
-
-}
-
-
-
-
-
-
-
-
-
-// ==========================
-// PROMPT FOR AI
-// ==========================
-
-static getPrompt(userID){
-
-
-    const emotion =
-    this.getSync(userID);
-
-
-
-return `
-
-
+    return `
 Current Emotional State:
-
 
 Mood:
 ${emotion.mood}
 
+Happiness:
+${emotion.happiness}/100
 
-Emotion Intensity:
-${emotion.intensity}/10
+Anger:
+${emotion.anger}/100
 
+Sadness:
+${emotion.sadness}/100
 
-Trust:
-${emotion.trust}/100
+Excitement:
+${emotion.excitement}/100
 
+Affection:
+${emotion.affection}/100
 
-Relationship:
-${emotion.relationship}
-
-
+Last Reason:
+${emotion.lastReason || "None"}
 
 Behavior:
 
-
-If trust is high:
-
-- Act like a close friend.
-- Be comfortable joking.
-- Use more casual language.
-- Roast lightly when appropriate.
-
-
-If user mood is negative:
-
+If the user's mood appears negative:
 - Be supportive.
-- Reduce roasting.
+- Reduce unnecessary roasting.
 - Be understanding.
 
-
-If user mood is happy:
-
+If the user is happy:
 - Match their energy.
-- Be playful.
+- Be playful when appropriate.
 
+If the conversation is serious:
+- Stay calm and focused.
 
 Never mention this emotion system directly.
-
-
-
 `;
+  }
 
+  // ============================================================
+  // UPDATE EMOTION
+  // ============================================================
 
-
-}
-
-
-
-
-
-
-
-
-
-// ==========================
-// SYNC GET
-// ==========================
-
-static getSync(userID){
-
-
-const emotions =
-load();
-
-
-
-return (
-
-    emotions[userID]
-
-    ||
-
-    {
-
-        mood:"neutral",
-
-        intensity:0,
-
-        trust:50,
-
-        relationship:"new",
-
-        lastReason:null
-
+  static async update(userID, message) {
+    if (!userID || !message) {
+      return null;
     }
 
-);
+    const emotion = await EmotionStore.get(userID);
 
+    const text = String(message).toLowerCase();
 
+    // ==========================================================
+    // HAPPY
+    // ==========================================================
 
+    if (
+      text.includes("thank") ||
+      text.includes("love") ||
+      text.includes("happy") ||
+      text.includes("good") ||
+      text.includes("nice") ||
+      text.includes("great") ||
+      text.includes("amazing")
+    ) {
+      emotion.mood = "Happy";
+
+      emotion.happiness = Math.min(Number(emotion.happiness || 0) + 10, 100);
+
+      emotion.excitement = Math.min(Number(emotion.excitement || 0) + 5, 100);
+
+      emotion.lastReason = "User expressed positivity";
+    }
+
+    // ==========================================================
+    // SAD
+    // ==========================================================
+
+    if (
+      text.includes("sad") ||
+      text.includes("depressed") ||
+      text.includes("bad day") ||
+      text.includes("terrible") ||
+      text.includes("horrible") ||
+      text.includes("tired") ||
+      text.includes("exhausted")
+    ) {
+      emotion.mood = "Sad";
+
+      emotion.sadness = Math.min(Number(emotion.sadness || 0) + 10, 100);
+
+      emotion.lastReason = "User expressed sadness";
+    }
+
+    // ==========================================================
+    // ANGRY
+    // ==========================================================
+
+    if (
+      text.includes("angry") ||
+      text.includes("hate") ||
+      text.includes("mad") ||
+      text.includes("annoyed")
+    ) {
+      emotion.mood = "Angry";
+
+      emotion.anger = Math.min(Number(emotion.anger || 0) + 10, 100);
+
+      emotion.lastReason = "User expressed anger";
+    }
+
+    // ==========================================================
+    // AFFECTION
+    // ==========================================================
+
+    if (
+      text.includes("love you") ||
+      text.includes("love this") ||
+      text.includes("proud of you") ||
+      text.includes("good job") ||
+      text.includes("thanks bro") ||
+      text.includes("thank you")
+    ) {
+      emotion.affection = Math.min(Number(emotion.affection || 0) + 10, 100);
+
+      emotion.lastReason = "User expressed affection or appreciation";
+    }
+
+    // ==========================================================
+    // EXCITEMENT
+    // ==========================================================
+
+    if (
+      text.includes("wow") ||
+      text.includes("let's go") ||
+      text.includes("awesome") ||
+      text.includes("hell yeah") ||
+      text.includes("excited")
+    ) {
+      emotion.mood = "Excited";
+
+      emotion.excitement = Math.min(Number(emotion.excitement || 0) + 10, 100);
+
+      emotion.lastReason = "User expressed excitement";
+    }
+
+    // ==========================================================
+    // APOLOGY
+    // ==========================================================
+
+    if (text.includes("sorry") || text.includes("my bad")) {
+      emotion.mood = "Forgiving";
+
+      emotion.affection = Math.min(Number(emotion.affection || 0) + 5, 100);
+
+      emotion.lastReason = "User apologized";
+    }
+
+    // ==========================================================
+    // SAVE
+    // ==========================================================
+
+    await EmotionStore.save(emotion);
+
+    return {
+      mood: emotion.mood,
+
+      happiness: emotion.happiness,
+
+      anger: emotion.anger,
+
+      sadness: emotion.sadness,
+
+      excitement: emotion.excitement,
+
+      affection: emotion.affection,
+
+      lastReason: emotion.lastReason,
+
+      updatedAt: emotion.updatedAt,
+    };
+  }
 }
-
-
-
-
-
-
-
-
-
-// ==========================
-// UPDATE EMOTION
-// ==========================
-
-static async update(userID,message){
-
-
-
-const emotions =
-load();
-
-
-
-let current =
-
-
-emotions[userID]
-
-||
-
-{
-
-    mood:"neutral",
-
-    intensity:0,
-
-    trust:50,
-
-    relationship:"new",
-
-    lastReason:null
-
-};
-
-
-
-
-
-
-const text =
-message.toLowerCase();
-
-
-
-
-
-
-// ==========================
-// HAPPY
-// ==========================
-
-
-if(
-
-text.includes("thank")
-
-||
-
-text.includes("love")
-
-||
-
-text.includes("happy")
-
-||
-
-text.includes("good")
-
-||
-
-text.includes("nice")
-
-||
-
-text.includes("great")
-
-||
-
-text.includes("amazing")
-
-){
-
-
-current.mood =
-"happy";
-
-
-current.intensity =
-Math.min(
-current.intensity + 2,
-10
-);
-
-
-
-current.trust +=2;
-
-
-current.lastReason =
-"User expressed positivity";
-
-
-}
-
-
-
-
-
-
-
-// ==========================
-// SAD
-// ==========================
-
-
-if(
-
-text.includes("sad")
-
-||
-
-text.includes("depressed")
-
-||
-
-text.includes("bad day")
-
-||
-
-text.includes("terrible")
-
-||
-
-text.includes("horrible")
-
-||
-
-text.includes("tired")
-
-||
-
-text.includes("exhausted")
-
-){
-
-
-current.mood =
-"sad";
-
-
-current.intensity =
-Math.min(
-current.intensity + 3,
-10
-);
-
-
-
-current.lastReason =
-"User expressed sadness";
-
-
-}
-
-
-
-
-
-
-
-
-// ==========================
-// ANGRY
-// ==========================
-
-
-if(
-
-text.includes("angry")
-
-||
-
-text.includes("hate")
-
-||
-
-text.includes("mad")
-
-||
-
-text.includes("annoyed")
-
-){
-
-
-current.mood =
-"angry";
-
-
-current.intensity =
-Math.min(
-current.intensity + 3,
-10
-);
-
-
-
-current.lastReason =
-"User expressed anger";
-
-
-}
-
-
-
-
-
-
-
-// ==========================
-// FORGIVING
-// ==========================
-
-
-if(
-
-text.includes("sorry")
-
-||
-
-text.includes("my bad")
-
-){
-
-
-current.mood =
-"forgiving";
-
-
-current.trust +=5;
-
-
-current.lastReason =
-"User apologized";
-
-
-}
-
-
-
-
-
-
-
-
-
-// ==========================
-// TRUST LIMIT
-// ==========================
-
-
-if(current.trust > 100)
-
-current.trust = 100;
-
-
-
-if(current.trust < 0)
-
-current.trust = 0;
-
-
-
-
-
-
-
-
-// ==========================
-// RELATIONSHIP LEVEL
-// ==========================
-
-
-if(current.trust >= 90){
-
-
-current.relationship =
-"very close friend";
-
-
-}
-
-else if(current.trust >= 70){
-
-
-current.relationship =
-"close friend";
-
-
-}
-
-else if(current.trust >= 50){
-
-
-current.relationship =
-"friend";
-
-
-}
-
-else{
-
-
-current.relationship =
-"acquaintance";
-
-
-}
-
-
-
-
-
-
-
-
-
-// ==========================
-// SAVE EXTRA DATA
-// ==========================
-
-
-current.updatedAt =
-new Date().toISOString();
-
-
-
-
-emotions[userID]=current;
-
-
-
-save(emotions);
-
-
-
-}
-
-
-
-
-
-
-}
-
-
 
 module.exports = EmotionManager;
