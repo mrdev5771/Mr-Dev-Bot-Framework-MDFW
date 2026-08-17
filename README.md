@@ -1,14 +1,14 @@
 # Mr Dev Bot Framework (MDFW)
 
-> An AI conversation framework for Discord focused on long-term conversational consistency through persistent memory, personality, context, relationships, emotional state, and behavioral decision-making.
+> An experimental Discord AI conversation framework focused on persistent memory, conversational context, personality, relationships, emotional state, goals, timelines, and long-term behavioral consistency.
 
-MDFW is a modular Discord framework designed to make an AI behave more like a long-term companion than a conventional chatbot.
+Mr Dev Bot Framework (MDFW) is a modular Discord framework designed to make an AI behave more like a long-term conversational companion rather than a conventional chatbot.
 
-Instead of treating every message as an isolated interaction, MDFW builds responses around persistent conversational state — including memory, personality, context, relationships, emotional state, conversation history, goals, timelines, and behavioral decisions.
+Instead of treating every message as an isolated interaction, MDFW can extract useful information from conversations, store structured user state, retrieve relevant information later, and use that state when generating future responses.
 
 The goal isn't simply to answer questions.
 
-The goal is to create conversations that feel consistent, humorous, personal, and capable of developing over time.
+The goal is to create conversations that feel **consistent, personal, contextual, and capable of developing over time.**
 
 ---
 
@@ -16,101 +16,327 @@ The goal is to create conversations that feel consistent, humorous, personal, an
 
 Mr Dev Bot Framework (MDFW) is an experimental AI conversation framework.
 
-The architecture and AI systems are continuously evolving, and some features may change, be replaced, or be redesigned as development progresses.
+The architecture is actively evolving. Some systems are implemented, some are being refined, and others may be expanded or redesigned as development continues.
 
 MDFW is primarily a personal project and experimental framework rather than a finished production-ready product.
 
 ---
 
-## Conversation Boundaries
+# Conversation Boundaries
 
-MDFW treats conversations as belonging to the people who have them.
+MDFW is designed around **user-specific conversational state**.
 
-The AI is designed to avoid casually revealing another user's private discussions or personal disclosures to someone else, even if asked directly.
+Persistent information is associated with the user it belongs to rather than being treated as one global pool of knowledge.
 
-Instead of acting as a conversation log that exposes everything it knows, the framework attempts to maintain contextual boundaries while keeping the AI's personality and conversational behavior intact.
+This allows the framework to maintain separate conversational state for different users and helps prevent information learned from one user from being casually exposed to another user.
+
+The goal is to preserve personalization while maintaining conversational boundaries.
 
 ---
 
-# v2 Architecture
+# V2 Architecture
 
-MDFW v2 introduces a major architectural step forward from the original framework.
+## Persistent Conversational State
 
-The biggest change is the introduction of **persistent conversational state through MongoDB**, allowing information processed by the framework to survive beyond a single conversation or runtime session.
+MDFW v2 introduces a major architectural change from the original framework:
 
-The framework now works with structured knowledge such as:
+**MongoDB-backed persistent conversational state.**
 
-- Memories
-- User profiles
+Instead of relying only on temporary conversation context, the framework can extract structured information from messages and store different types of information in dedicated systems.
+
+Current knowledge categories include:
+
+- Memory
+- Profile
 - Goals
 - Timeline events
 - Running jokes
 - Emotional state
 - Relationship state
-- Behavioral information
-- Confidence and importance values
-- Learned conversational information
 
-Instead of treating memory as one large block of conversation history, MDFW separates different types of information into dedicated systems that can be processed and used independently.
+The extracted information can include additional metadata such as:
+
+- Importance
+- Confidence
+- Tags
+- Categories
+- Status
+- Progress
+- Timestamps
+
+This allows different kinds of conversational information to be stored and processed independently.
 
 ---
 
-# Core Systems
+# Knowledge Processing Pipeline
 
-### AI Personality System
+The V2 knowledge architecture follows a centralized extraction and routing pipeline:
 
-- Personality profiles
-- Mood system
-- Emotion tracking
-- Conversation memory
-- Relationship tracking
-- Context building
-- Behavioral decision engine
-- Prompt builder
-- Prompt protection
-- Timeline management
-- Running joke system
-- Style management
-- Goal management
+    User Message
+          │
+          ▼
+    KnowledgeExtractor
+          │
+          ▼
+    KnowledgeValidator
+          │
+          ▼
+    KnowledgeRouter
+          │
+          ├── Memory
+          ├── Profile
+          ├── Goals
+          ├── Timeline
+          ├── Running Jokes
+          ├── Emotion
+          └── Relationship
+          │
+          ▼
+    Persistent User State
+          │
+          ▼
+    Context / Behavioral Processing
+          │
+          ▼
+    Prompt Construction
+          │
+          ▼
+    AI Model
+          │
+          ▼
+    Discord Response
 
-### Persistent Memory & Knowledge
+This architecture allows the AI to extract information once and route each category to its appropriate subsystem.
 
-- MongoDB-backed persistence
-- Structured memory
-- Knowledge extraction
-- Confidence tracking
-- Memory importance
-- Categorized knowledge
-- Running joke detection
-- Profile extraction
-- Goal extraction
-- Timeline extraction
+---
 
-### Behavioral Systems
+# Knowledge Extraction
 
-- Behavior manager
-- Emotional state processing
+### KnowledgeExtractor
+
+The `KnowledgeExtractor` is responsible for analyzing a conversation message and asking the AI model whether the message contains information worth learning.
+
+It produces structured knowledge such as:
+
+- Memories
+- Profile facts
+- Goals
+- Timeline events
+- Running jokes
+- Emotional information
+- Relationship information
+
+The extractor also returns a confidence value and a learning decision.
+
+---
+
+### KnowledgeValidator
+
+The `KnowledgeValidator` acts as a safety and structure layer between extraction and persistence.
+
+It validates the extracted knowledge and normalizes the expected structure before it reaches the rest of the framework.
+
+This prevents malformed or unexpected extraction results from being blindly passed into the storage systems.
+
+---
+
+### KnowledgeRouter
+
+The `KnowledgeRouter` receives validated knowledge and routes each category to its appropriate manager.
+
+For example:
+
+    Memory      → MemoryManager
+    Profile     → ProfileManager
+    Goal        → GoalManager
+    Timeline    → TimelineManager
+    Emotion     → EmotionManager
+    Relationship→ RelationshipManager
+
+This keeps extraction separate from storage and business logic.
+
+---
+
+# Persistent State Systems
+
+## Memory System
+
+The memory system stores long-term conversational information in MongoDB.
+
+Memories can contain:
+
+- Memory text
+- Importance
+- Tags
+- Source
+- Creation time
+
+The system also supports retrieval and keyword-based searching.
+
+Memory retrieval ranks relevant memories using factors such as importance, recency, keyword overlap, tags, and memory source.
+
+---
+
+## Profile System
+
+The profile system stores structured information about a user.
+
+Examples can include:
+
+- Personal facts
+- Interests
+- Preferences
+- Developer information
+- Influences
+- Other long-term profile information
+
+Profile information is maintained separately from ordinary conversational memories.
+
+---
+
+## Goal System
+
+The goal system stores user goals as persistent records.
+
+Goals can have:
+
+- Goal description
+- Status
+- Progress
+- Creation time
+- Update time
+
+Supported goal states include:
+
+- `active`
+- `completed`
+- `abandoned`
+
+This allows the framework to distinguish between historical goals and currently active goals.
+
+---
+
+## Timeline System
+
+The timeline system stores important events associated with a user.
+
+Timeline events can represent things such as:
+
+- Projects started
+- Projects completed
+- Major changes
+- Important personal events
+- Significant conversational milestones
+
+Timeline events contain:
+
+- Event description
+- Category
+- Importance
+- Timestamps
+
+The system can retrieve recent events, chronological events, and search through stored timeline events.
+
+---
+
+## Emotional State
+
+MDFW includes an emotional-state system designed to represent the current conversational state of a user.
+
+The system can track information such as:
+
+- Mood
+- Happiness
+- Anger
+- Sadness
+- Excitement
+- Affection
+- Reason for the current state
+
+Emotional state can be used as part of the AI's behavioral context.
+
+---
+
+## Relationship State
+
+The framework also contains a relationship-state system intended to represent how the AI's interaction with a user develops over time.
+
+Relationship information can be used alongside other persistent state when determining conversational behavior.
+
+---
+
+## Running Jokes
+
+Running jokes are intended to provide continuity across conversations.
+
+A joke or recurring interaction can be detected as knowledge and stored so that future conversations can potentially reference it naturally.
+
+This system is still being refined as part of the V2 architecture.
+
+---
+
+# Context & Behavioral Processing
+
+Persistent state is not intended to be dumped directly into every prompt.
+
+The framework separates stored information into different systems so that relevant information can be selected and used when appropriate.
+
+The long-term goal is to allow the AI to consider:
+
+- Relevant memories
+- User profile
+- Current goals
+- Timeline
+- Emotional state
 - Relationship state
-- Trust-related state
-- Context-aware decisions
-- Conversation-aware behavior
+- Conversation history
+- Behavioral context
+
+before generating a response.
+
+This allows the AI to maintain continuity without treating every piece of stored information as equally relevant.
+
+---
+
+# AI Personality
+
+MDFW is designed around the idea that personality should not exist only inside a static system prompt.
+
+Personality and behavior can be influenced by:
+
+- Conversation context
+- Persistent user state
+- Emotional state
+- Relationship state
+- Previous interactions
+- Running jokes
+- Behavioral decisions
+
+The objective is to make the AI's personality feel consistent across conversations while still allowing its behavior to adapt to the situation.
 
 ---
 
 # Discord Framework
 
+MDFW also provides the underlying Discord bot framework.
+
+Current framework features include:
+
 - Prefix commands
 - Slash commands
-- Event system
-- Modular command loader
-- Cooldown manager
-- Permission manager
+- Discord event system
+- Modular command loading
+- Cooldown management
+- Permission handling
 - Owner commands
 - Modular command architecture
+- Messenger-compatible command architecture
 
 ---
 
 # Built-in Commands
+
+The framework contains a large collection of commands, including:
 
 - AI Chat
 - Anime
@@ -123,104 +349,86 @@ Instead of treating memory as one large block of conversation history, MDFW sepa
 - Fun commands
 - Games
 - Quotes
-- And more...
+- And more
 
-The command system also contains a large collection of commands originally developed for my Messenger bot and adapted into the Discord framework.
+Many commands originated from the original Messenger bot architecture and were later adapted into the Discord framework.
 
 ---
 
-# How the AI State Works
+# What Makes MDFW Different?
 
-MDFW does not rely solely on previous messages to maintain conversational continuity.
+Most Discord bots execute commands.
 
-The framework can process conversations and extract structured information that can become part of the AI's long-term state.
+MDFW is designed to build conversations.
 
-A simplified representation looks like:
+The interesting part isn't simply connecting an AI model to Discord.
 
-    Conversation
-          │
-          ▼
-    Knowledge Extraction
-          │
-          ├── Memory
-          ├── Profile
-          ├── Goals
-          ├── Timeline
-          ├── Running Jokes
-          ├── Emotion
-          └── Relationship
-          │
-          ▼
-    Persistent State
-          │
-          ▼
-    Context + Behavioral Processing
-          │
-          ▼
-    Prompt Construction
-          │
-          ▼
-    AI Response
+The interesting part is everything built around the model:
 
-This allows the AI to build continuity across conversations instead of starting from a blank state every time.
+**Memory.**
+
+**Profile.**
+
+**Context.**
+
+**Goals.**
+
+**Timeline.**
+
+**Emotion.**
+
+**Relationships.**
+
+**Behavior.**
+
+These systems work together to give the AI persistent conversational state instead of treating every message as completely independent.
 
 ---
 
 # Philosophy
 
-Most Discord bots execute commands.
+MDFW is not primarily trying to make the AI know more information.
 
-MDFW tries to build conversations.
+It is trying to make the AI **behave more consistently over time.**
 
-The AI is designed to maintain a consistent identity, remember relevant interactions, adapt its tone, develop running jokes, understand conversational context, and change its behavior based on accumulated state.
+A conversation should be able to influence future conversations.
 
-The framework is not trying to make the AI simply _know more_.
+A user's goals should not disappear after one session.
 
-It is trying to make the AI **behave more consistently over time**.
+Important events should have a place in the user's timeline.
 
----
+Running jokes should be capable of returning naturally.
 
-# What Makes MDFW Different
+The AI should be able to distinguish between different users.
 
-If I had to summarize MDFW in one sentence, it wouldn't be:
-
-> "Advanced Discord bot."
-
-I'd say:
-
-> **A Discord AI framework that tries to model personality and conversational behavior instead of treating every message independently.**
-
-The important part isn't simply connecting an AI model to Discord.
-
-The interesting part is everything built around the model.
-
-Memory.
-
-Personality.
-
-Context.
-
-Relationships.
-
-Emotion.
-
-Behavior.
-
-And the systems that connect them together.
+And persistent information should be used selectively rather than blindly inserted into every response.
 
 ---
 
 # Current Status
 
-**MDFW v2.0.0**
+## MDFW v2.0.0
 
 The framework is actively under development.
 
-Version 2 introduces persistent MongoDB-backed state and expands the conversational architecture with structured memory, knowledge extraction, profile processing, emotional and relationship systems, timelines, goals, trust-related state, and behavioral processing.
+V2 introduces:
 
-The framework is functional, but many systems are still being refined and expanded.
+- MongoDB-backed persistent state
+- Structured memory
+- Knowledge extraction
+- Knowledge validation
+- Knowledge routing
+- User profiles
+- Persistent goals
+- Timeline events
+- Emotional state
+- Relationship state
+- Running-joke detection
+- Context-aware conversational processing
 
-Future development will focus on improving the reliability, depth, and interaction between these systems rather than simply adding more features.
+The architecture is functional, but several systems are still being tested and refined.
+
+Current development is focused on improving the reliability and interaction between existing systems rather than simply adding more features.
 
 ---
 
@@ -229,8 +437,10 @@ Future development will focus on improving the reliability, depth, and interacti
 - Node.js
 - Discord.js
 - MongoDB
+- Mongoose
 - Groq API
-- Modular JavaScript architecture
+- JavaScript
+- Modular architecture
 
 ---
 
@@ -238,13 +448,13 @@ Future development will focus on improving the reliability, depth, and interacti
 
 MDFW started as a personal project.
 
-I wanted an AI companion that behaved the way I imagined — not just another chatbot that answered questions.
+I wanted an AI companion that behaved differently from a conventional chatbot — something capable of maintaining continuity, remembering relevant interactions, developing conversational patterns, and adapting its behavior over time.
 
-Every system in this framework exists because I wanted the AI to feel more consistent, remember previous conversations, develop its own personality, understand relationships and context, and interact more naturally over time.
+The framework gradually evolved from a Messenger bot into a larger Discord-based AI conversation framework.
 
-The project grew gradually from a personal Discord bot into a larger experimental conversation framework.
+Every subsystem exists because it contributes to that larger idea:
 
-Although the framework is public, it continues to evolve primarily around my own ideas, experiments, and use cases.
+**Build an AI that doesn't just respond — build one that remembers the relationship between conversations.**
 
 ---
 
@@ -253,3 +463,20 @@ Although the framework is public, it continues to evolve primarily around my own
 MDFW is a **personal experimental project** and should be considered a work in progress.
 
 The architecture will continue to change as new ideas are tested, existing systems are improved, and the boundaries between memory, personality, context, emotion, relationships, and behavior become more refined.
+
+The long-term focus is on improving the interaction between:
+
+- Memory
+- Profile
+- Goals
+- Timeline
+- Emotion
+- Relationships
+- Context
+- Personality
+- Behavior
+
+rather than simply increasing the number of features.
+
+
+
